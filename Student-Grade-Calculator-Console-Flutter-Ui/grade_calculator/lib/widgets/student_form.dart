@@ -41,44 +41,27 @@ class _StudentFormState extends State<StudentForm> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.10),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
+    return Card(
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Section label
-              const Text(
+              Text(
                 'Add a Student',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1A1A2E),
-                ),
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
-              const SizedBox(height: 16),
-
-              // Name field
+              const SizedBox(height: 20),
               TextFormField(
                 controller: _nameController,
                 textCapitalization: TextCapitalization.words,
                 decoration: const InputDecoration(
                   labelText: 'Student Name',
-                  prefixIcon: Icon(Icons.person_outline_rounded),
+                  prefixIcon: Icon(Icons.person),
                 ),
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) {
@@ -87,9 +70,7 @@ class _StudentFormState extends State<StudentForm> {
                   return null;
                 },
               ),
-              const SizedBox(height: 12),
-
-              // Score field
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _scoreController,
                 enabled: !_scoreUnknown,
@@ -97,10 +78,8 @@ class _StudentFormState extends State<StudentForm> {
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: InputDecoration(
                   labelText: 'Score (0 – 100)',
-                  prefixIcon: const Icon(Icons.score_rounded),
-                  fillColor: _scoreUnknown
-                      ? Colors.grey.shade100
-                      : Colors.grey.shade50,
+                  prefixIcon: const Icon(Icons.score),
+                  hintText: _scoreUnknown ? 'Score unknown' : null,
                 ),
                 validator: (v) {
                   if (_scoreUnknown) return null;
@@ -114,75 +93,24 @@ class _StudentFormState extends State<StudentForm> {
                   return null;
                 },
               ),
-              const SizedBox(height: 8),
-
-              // Score unknown checkbox
-              GestureDetector(
-                onTap: () => setState(() {
-                  _scoreUnknown = !_scoreUnknown;
+              const SizedBox(height: 12),
+              CheckboxListTile(
+                title: const Text('Score unknown'),
+                value: _scoreUnknown,
+                onChanged: (val) => setState(() {
+                  _scoreUnknown = val ?? false;
                   if (_scoreUnknown) _scoreController.clear();
                 }),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: Checkbox(
-                        value: _scoreUnknown,
-                        activeColor: kBlueEnd,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(4)),
-                        onChanged: (val) => setState(() {
-                          _scoreUnknown = val ?? false;
-                          if (_scoreUnknown) _scoreController.clear();
-                        }),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      'Score unknown',
-                      style:
-                          TextStyle(fontSize: 14, color: Colors.grey.shade700),
-                    ),
-                  ],
-                ),
+                controlAffinity: ListTileControlAffinity.leading,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
-              const SizedBox(height: 20),
-
-              // Gradient submit button
+              const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
-                height: 50,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: kButtonGradient,
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [
-                      BoxShadow(
-                        color: kOrangeStart.withValues(alpha: 0.35),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: ElevatedButton.icon(
-                    onPressed: _submit,
-                    icon: const Icon(Icons.add_rounded, color: Colors.white),
-                    label: const Text(
-                      'Add Student',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
-                    ),
-                  ),
+                child: ElevatedButton.icon(
+                  onPressed: _submit,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add Student'),
                 ),
               ),
             ],

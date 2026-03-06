@@ -8,7 +8,10 @@ import '../widgets/student_card.dart';
 import '../theme/app_theme.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final VoidCallback onToggleTheme;
+  final bool isDarkMode;
+
+  const HomeScreen({super.key, required this.onToggleTheme, required this.isDarkMode});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -149,196 +152,187 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: kScaffoldBg,
       body: CustomScrollView(
         slivers: [
-          // ── Gradient header ────────────────────────────────────────────────
-          SliverToBoxAdapter(
-            child: GradientHeader(
-              studentCount: _students.length,
-              onClearAll: _clearAll,
+          SliverAppBar(
+            expandedHeight: 200,
+            floating: false,
+            pinned: true,
+            flexibleSpace: FlexibleSpaceBar(
+              background: Container(
+                decoration: const BoxDecoration(
+                  gradient: kAppGradient,
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        'Grade Calculator',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -1,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '${_students.length} student${_students.length == 1 ? '' : 's'} added',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
+            actions: [
+              IconButton(
+                icon: Icon(widget.isDarkMode ? Icons.light_mode : Icons.dark_mode),
+                onPressed: widget.onToggleTheme,
+                color: Colors.white,
+              ),
+              if (_students.isNotEmpty)
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: _clearAll,
+                  color: Colors.white,
+                ),
+            ],
           ),
-
-          // ── Add-student form (no longer overlapping the header) ────────────
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(0, 16, 0, 0),
+              padding: const EdgeInsets.all(16),
               child: StudentForm(onAdd: _addStudent),
             ),
           ),
-
-          // ── Import / Export action row ─────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: [
-                  // Import button — always available
                   Expanded(
                     child: _ActionButton(
-                      icon: Icons.upload_file_rounded,
+                      icon: Icons.upload_file,
                       label: 'Import Excel',
                       loading: _importing,
                       onTap: _importing ? null : _importExcel,
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF00796B), Color(0xFF1A73E8)],
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                      ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  // Export button — disabled when no students
+                  const SizedBox(width: 16),
                   Expanded(
                     child: _ActionButton(
-                      icon: Icons.download_rounded,
+                      icon: Icons.download,
                       label: 'Export Excel',
                       loading: _exporting,
-                      onTap: (_students.isEmpty || _exporting)
-                          ? null
-                          : _exportExcel,
-                      gradient: _students.isEmpty
-                          ? LinearGradient(
-                              colors: [
-                                Colors.grey.shade400,
-                                Colors.grey.shade400
-                              ],
-                            )
-                          : kButtonGradient,
+                      onTap: (_students.isEmpty || _exporting) ? null : _exportExcel,
                     ),
                   ),
                 ],
               ),
             ),
           ),
-
-          // ── Results list (or empty state) ──────────────────────────────────
-          _students.isEmpty
-              ? SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: _EmptyState(),
-                )
-              : SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) => AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 350),
-                      child: StudentCard(
-                        key: ValueKey('${_students[index].name}_$index'),
-                        student: _students[index],
-                        index: index,
-                      ),
+          if (_students.isEmpty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: _EmptyState(),
+            )
+          else
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) => Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: StudentCard(
+                      key: ValueKey('${_students[index].name}_$index'),
+                      student: _students[index],
+                      index: index,
                     ),
-                    childCount: _students.length,
                   ),
                 ),
-
-          // Bottom padding
-          const SliverToBoxAdapter(child: SizedBox(height: 32)),
+                childCount: _students.length,
+              ),
+            ),
         ],
       ),
     );
   }
 }
 
-// ── Reusable gradient action button ───────────────────────────────────────────
+// ── Reusable action button ───────────────────────────────────────────
 class _ActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool loading;
   final VoidCallback? onTap;
-  final LinearGradient gradient;
 
   const _ActionButton({
     required this.icon,
     required this.label,
     required this.loading,
     required this.onTap,
-    required this.gradient,
   });
 
   @override
   Widget build(BuildContext context) {
-    final bool enabled = onTap != null && !loading;
+    final enabled = onTap != null && !loading;
     return Opacity(
-      opacity: enabled ? 1.0 : 0.55,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: gradient,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: enabled
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.18),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  )
-                ]
-              : [],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(14),
-            child: SizedBox(
-              height: 48,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  loading
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : Icon(icon, color: Colors.white, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+      opacity: enabled ? 1.0 : 0.5,
+      child: ElevatedButton.icon(
+        onPressed: onTap,
+        icon: loading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Icon(icon),
+        label: Text(label),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: enabled ? Theme.of(context).colorScheme.primary : Colors.grey,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         ),
       ),
     );
   }
 }
 
-// ── Empty state illustration ───────────────────────────────────────────────────
+// ── Empty state ───────────────────────────────────────────────────
 class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const SizedBox(height: 40),
-        Icon(Icons.school_outlined, size: 72, color: Colors.grey.shade300),
-        const SizedBox(height: 16),
-        Text(
-          'No students yet',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: Colors.grey.shade400,
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.school_outlined,
+            size: 80,
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Add a student manually or import an Excel file',
-          style: TextStyle(fontSize: 13, color: Colors.grey.shade400),
-        ),
-      ],
+          const SizedBox(height: 16),
+          Text(
+            'No students yet',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Add a student manually or import an Excel file',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 }
