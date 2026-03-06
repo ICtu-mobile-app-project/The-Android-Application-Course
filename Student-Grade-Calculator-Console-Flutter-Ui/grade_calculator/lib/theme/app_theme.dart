@@ -34,18 +34,20 @@ ThemeData appTheme(Brightness brightness) {
     fontFamily: 'Roboto',
     cardTheme: CardThemeData(
       elevation: 8,
-      shadowColor: Colors.black.withOpacity(0.1),
+      shadowColor: Colors.black.withValues(alpha: 0.1),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
     ),
     inputDecorationTheme: InputDecorationTheme(
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
+        borderSide: BorderSide(
+            color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
+        borderSide: BorderSide(
+            color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -59,7 +61,7 @@ ThemeData appTheme(Brightness brightness) {
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         elevation: 6,
-        shadowColor: Colors.black.withOpacity(0.2),
+        shadowColor: Colors.black.withValues(alpha: 0.2),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
       ),

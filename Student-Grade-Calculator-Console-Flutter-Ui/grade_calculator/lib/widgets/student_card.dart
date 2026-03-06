@@ -21,7 +21,7 @@ class StudentCard extends StatelessWidget {
         child: Row(
           children: [
             CircleAvatar(
-              backgroundColor: accentColor.withOpacity(0.2),
+              backgroundColor: accentColor.withValues(alpha: 0.2),
               child: Text(
                 '${index + 1}',
                 style: TextStyle(

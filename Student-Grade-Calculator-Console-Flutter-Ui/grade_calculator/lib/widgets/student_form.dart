@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/student.dart';
-import '../theme/app_theme.dart';
 
 class StudentForm extends StatefulWidget {
   final void Function(Student student) onAdd;
@@ -102,7 +101,8 @@ class _StudentFormState extends State<StudentForm> {
                   if (_scoreUnknown) _scoreController.clear();
                 }),
                 controlAffinity: ListTileControlAffinity.leading,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
               ),
               const SizedBox(height: 24),
               SizedBox(

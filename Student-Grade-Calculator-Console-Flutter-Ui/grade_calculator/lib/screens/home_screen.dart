@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../models/student.dart';
 import '../utils/grade_calculator.dart';
 import '../utils/file_service.dart';
-import '../widgets/gradient_header.dart';
 import '../widgets/student_form.dart';
 import '../widgets/student_card.dart';
 import '../theme/app_theme.dart';
@@ -11,7 +10,8 @@ class HomeScreen extends StatefulWidget {
   final VoidCallback onToggleTheme;
   final bool isDarkMode;
 
-  const HomeScreen({super.key, required this.onToggleTheme, required this.isDarkMode});
+  const HomeScreen(
+      {super.key, required this.onToggleTheme, required this.isDarkMode});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -191,7 +191,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             actions: [
               IconButton(
-                icon: Icon(widget.isDarkMode ? Icons.light_mode : Icons.dark_mode),
+                icon: Icon(
+                    widget.isDarkMode ? Icons.light_mode : Icons.dark_mode),
                 onPressed: widget.onToggleTheme,
                 color: Colors.white,
               ),
@@ -228,7 +229,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       icon: Icons.download,
                       label: 'Export Excel',
                       loading: _exporting,
-                      onTap: (_students.isEmpty || _exporting) ? null : _exportExcel,
+                      onTap: (_students.isEmpty || _exporting)
+                          ? null
+                          : _exportExcel,
                     ),
                   ),
                 ],
@@ -244,7 +247,8 @@ class _HomeScreenState extends State<HomeScreen> {
             SliverList(
               delegate: SliverChildBuilderDelegate(
                 (context, index) => Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 300),
                     child: StudentCard(
@@ -293,9 +297,11 @@ class _ActionButton extends StatelessWidget {
             : Icon(icon),
         label: Text(label),
         style: ElevatedButton.styleFrom(
-          backgroundColor: enabled ? Theme.of(context).colorScheme.primary : Colors.grey,
+          backgroundColor:
+              enabled ? Theme.of(context).colorScheme.primary : Colors.grey,
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         ),
       ),
@@ -314,7 +320,8 @@ class _EmptyState extends StatelessWidget {
           Icon(
             Icons.school_outlined,
             size: 80,
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+            color:
+                Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
           ),
           const SizedBox(height: 16),
           Text(
@@ -327,7 +334,10 @@ class _EmptyState extends StatelessWidget {
           Text(
             'Add a student manually or import an Excel file',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.6),
                 ),
             textAlign: TextAlign.center,
           ),
@@ -336,5 +346,3 @@ class _EmptyState extends StatelessWidget {
     );
   }
 }
-
-
