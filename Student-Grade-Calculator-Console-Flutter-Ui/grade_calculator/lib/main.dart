@@ -13,16 +13,29 @@ void main() {
   runApp(const GradeCalculatorApp());
 }
 
-class GradeCalculatorApp extends StatelessWidget {
+class GradeCalculatorApp extends StatefulWidget {
   const GradeCalculatorApp({super.key});
+
+  @override
+  State<GradeCalculatorApp> createState() => _GradeCalculatorAppState();
+}
+
+class _GradeCalculatorAppState extends State<GradeCalculatorApp> {
+  bool _isDarkMode = false;
+
+  void _toggleTheme() {
+    setState(() => _isDarkMode = !_isDarkMode);
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Grade Calculator',
       debugShowCheckedModeBanner: false,
-      theme: appTheme(),
-      home: const HomeScreen(),
+      theme: appTheme(Brightness.light),
+      darkTheme: appTheme(Brightness.dark),
+      themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
+      home: HomeScreen(onToggleTheme: _toggleTheme, isDarkMode: _isDarkMode),
     );
   }
 }
