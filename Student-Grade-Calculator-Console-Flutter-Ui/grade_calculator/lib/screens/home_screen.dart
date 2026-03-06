@@ -120,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
         rowBuilder: (student) => [
           student.name,
           student.score?.toString() ?? 'N/A',
-          student.score != null ? getGrade(student.score!) : '–',
+          student.grade,
         ],
       );
 

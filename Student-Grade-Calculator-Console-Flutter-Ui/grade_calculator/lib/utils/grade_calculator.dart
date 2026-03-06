@@ -1,34 +1,34 @@
 import 'package:flutter/material.dart';
 import '../models/student.dart';
 
+// grade calculation data tables used by utilities below.
+const _gradeThresholds = <int, String>{
+  90: 'A',
+  80: 'B',
+  70: 'C',
+  60: 'D',
+};
+const _gradeColours = <String, Color>{
+  'A': Color(0xFF2E7D32), // green
+  'B': Color(0xFF00796B), // teal
+  'C': Color(0xFFF57F17), // amber
+  'D': Color(0xFFE65100), // deep orange
+  'F': Color(0xFFC62828), // red
+};
+
 /// Returns the letter grade for a given score (0–100).
-/// Can be used as a first-class function / lambda:
-///   e.g.  final grader = getGrade;  grader(85) => 'B'
+/// Uses a small lookup table rather than a cascade of `if` statements.
+/// The map is small so the loop is effectively constant‑time.
 String getGrade(int score) {
-  if (score >= 90) return 'A';
-  if (score >= 80) return 'B';
-  if (score >= 70) return 'C';
-  if (score >= 60) return 'D';
+  for (final entry in _gradeThresholds.entries) {
+    if (score >= entry.key) return entry.value;
+  }
   return 'F';
 }
 
-/// Returns the accent colour used for each grade band.
-Color gradeAccentColor(String grade) {
-  switch (grade) {
-    case 'A':
-      return const Color(0xFF2E7D32); // green
-    case 'B':
-      return const Color(0xFF00796B); // teal
-    case 'C':
-      return const Color(0xFFF57F17); // amber
-    case 'D':
-      return const Color(0xFFE65100); // deep orange
-    case 'F':
-      return const Color(0xFFC62828); // red
-    default:
-      return const Color(0xFF9E9E9E); // grey (no score)
-  }
-}
+/// Returns the accent colour for a grade.
+Color gradeAccentColor(String grade) =>
+    _gradeColours[grade] ?? const Color(0xFF9E9E9E);
 
 // ── Higher-order & lambda utility functions ──────────────────────────────────
 
@@ -67,6 +67,13 @@ T reduceStudents<T>(
 /// Example:
 ///   final curvedGrader = gradingFunction(curve: 5);
 ///   curvedGrader(85) // grades 90 → 'A'
-String Function(int) gradingFunction({int curve = 0}) =>
-    (int score) => getGrade((score + curve).clamp(0, 100));
+String Function(int) gradingFunction({int curve = 0}) {
+  return (int score) => getGrade((score + curve).clamp(0, 100));
+}
+
+/// Handy extensions that keep UI code terse.
+extension StudentExtensions on Student {
+  String get grade => score != null ? getGrade(score!) : '–';
+  Color get accent => gradeAccentColor(grade);
+}
 

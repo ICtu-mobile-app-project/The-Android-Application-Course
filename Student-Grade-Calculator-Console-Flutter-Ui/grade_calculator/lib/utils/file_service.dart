@@ -23,23 +23,39 @@ class ImportResult {
 
 // ── Excel column-header aliases (case-insensitive) ───────────────────────────
 
-const _nameAliases  = ['name', 'student', 'student name', 'full name', 'fullname'];
-const _scoreAliases = ['score', 'marks', 'mark', 'result', 'points'];
-const _gradeAliases = ['grade', 'letter grade', 'letter', 'rating'];
+// Use lowercase sets so we only do the toLowerCase() call once per header.
+final _nameAliases = <String>{
+  'name',
+  'student',
+  'student name',
+  'full name',
+  'fullname',
+};
+final _scoreAliases = <String>{
+  'score',
+  'marks',
+  'mark',
+  'result',
+  'points',
+};
+final _gradeAliases = <String>{
+  'grade',
+  'letter grade',
+  'letter',
+  'rating',
+};
 
 // ── Internal helpers ─────────────────────────────────────────────────────────
 
 /// Normalises a cell value to a trimmed String (null → '').
 String _cellText(dynamic v) => v?.toString().trim() ?? '';
 
-/// Checks if a string looks like a header token.
-bool _matchesAlias(String cell, List<String> aliases) =>
-    aliases.contains(cell.toLowerCase());
-
-/// Higher-order function: given a list of header strings returns the index of
-/// the first one matching [aliases], or -1 if none found.
-int _findColumn(List<String> headers, List<String> aliases) =>
-    headers.indexWhere((h) => _matchesAlias(h, aliases));
+/// Returns the index of the first header that matches any token in [aliases].
+/// Conversion to lowercase is done once for the headers list ahead of time.
+int _findColumn(List<String> headers, Set<String> aliases) {
+  final lc = headers.map((h) => h.toLowerCase()).toList();
+  return lc.indexWhere(aliases.contains);
+}
 
 // ── Public API ───────────────────────────────────────────────────────────────
 
@@ -99,32 +115,30 @@ ImportResult _parseExcelBytes({
   }
 
   // ── Detect header row ──────────────────────────────────────────────────────
-  final firstRowText =
-      rows.first.map((c) => _cellText(c?.value)).toList();
+  final firstRowText = rows.first.map((c) => _cellText(c?.value)).toList();
 
-  final bool hasHeader = firstRowText.any(
+  final lcFirst = firstRowText.map((s) => s.toLowerCase()).toList();
+  final bool hasHeader = lcFirst.any(
     (cell) =>
-        _matchesAlias(cell, _nameAliases) ||
-        _matchesAlias(cell, _scoreAliases) ||
-        _matchesAlias(cell, _gradeAliases),
+        _nameAliases.contains(cell) ||
+        _scoreAliases.contains(cell) ||
+        _gradeAliases.contains(cell),
   );
 
-  int nameCol, scoreCol, gradeCol;
-  int dataStart;
+  int nameCol, scoreCol, gradeCol, dataStart;
 
   if (hasHeader) {
-    nameCol  = _findColumn(firstRowText, _nameAliases);
+    nameCol = _findColumn(firstRowText, _nameAliases);
     scoreCol = _findColumn(firstRowText, _scoreAliases);
     gradeCol = _findColumn(firstRowText, _gradeAliases);
     dataStart = 1;
-    // Fall back to positional for any column that wasn't found via header
-    if (nameCol  == -1) { nameCol  = 0; }
-    if (scoreCol == -1) { scoreCol = (nameCol == 0) ? 1 : 0; }
+    nameCol = nameCol < 0 ? 0 : nameCol;
+    scoreCol = scoreCol < 0 ? (nameCol == 0 ? 1 : 0) : scoreCol;
   } else {
     // Positional fall-back
-    nameCol   = 0;
-    scoreCol  = 1;
-    gradeCol  = 2;
+    nameCol = 0;
+    scoreCol = 1;
+    gradeCol = 2;
     dataStart = 0;
   }
 
@@ -136,39 +150,39 @@ ImportResult _parseExcelBytes({
 
   int withScore = 0, withoutScore = 0, withExistingGrade = 0;
 
-  final students = dataRows.map((row) {
-    // Lambda helpers for safe column access
+  final students = <Student>[];
+  for (final row in dataRows) {
     String cell(int col) =>
-        col >= 0 && col < row.length ? _cellText(row[col]?.value) : '';
+        (col >= 0 && col < row.length) ? _cellText(row[col]?.value) : '';
 
-    final name  = cell(nameCol);
-    if (name.isEmpty) return null; // skip rows with no name
+    final name = cell(nameCol);
+    if (name.isEmpty) continue; // skip blank rows
 
-    final scoreStr = cell(scoreCol);
-    final int? score = int.tryParse(scoreStr);
-
-    // Check if the file already has a grade column
+    final score = int.tryParse(cell(scoreCol));
     final existingGrade = gradeCol >= 0 ? cell(gradeCol) : '';
-    final bool hasExistingGrade =
+    final hasExistingGrade =
         existingGrade.isNotEmpty && RegExp(r'^[A-Fa-f–-]$').hasMatch(existingGrade);
 
-    if (hasExistingGrade) { withExistingGrade++; }
-    if (score != null) { withScore++; } else { withoutScore++; }
+    if (hasExistingGrade) withExistingGrade++;
+    if (score != null) {
+      withScore++;
+    } else {
+      withoutScore++;
+    }
 
-    return Student(name: name, score: score);
-  }).whereType<Student>().toList();
+    students.add(Student(name: name, score: score));
+  }
 
   // ── Build summary ──────────────────────────────────────────────────────────
-  final buffer = StringBuffer()
+  final summary = StringBuffer()
     ..write('Imported ${students.length} student(s). ')
-    ..write('$withScore with score(s), ')
-    ..write('$withoutScore without score(s)');
-  if (withExistingGrade > 0) {
-    buffer.write(', $withExistingGrade already had a grade (grades recalculated from scores)');
-  }
-  buffer.write('.');
+    ..write('$withScore with score(s), $withoutScore without score(s)')
+    ..write(withExistingGrade > 0
+        ? ', $withExistingGrade already had a grade (re‑calculated from scores)'
+        : '')
+    ..write('.');
 
-  return ImportResult(students: students, summary: buffer.toString());
+  return ImportResult(students: students, summary: summary.toString());
 }
 
 // ── Export ────────────────────────────────────────────────────────────────────

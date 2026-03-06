@@ -11,8 +11,9 @@ class StudentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool hasScore = student.score != null;
-    final String grade = hasScore ? getGrade(student.score!) : '–';
-    final Color accentColor = gradeAccentColor(grade);
+    // extensions defined in grade_calculator.dart
+    final String grade = student.grade;
+    final Color accentColor = student.accent;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
