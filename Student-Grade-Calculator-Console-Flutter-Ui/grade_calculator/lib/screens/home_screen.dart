@@ -118,7 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _exporting = true);
     try {
       // Higher-order: rowBuilder lambda maps each Student to its Excel row data.
-      await exportStudentsToExcel(
+      final exportedTo = await exportStudentsToExcel(
         students: _students,
         rowBuilder: (student) => [
           student.name,
@@ -129,8 +129,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Export ready — use the share sheet to save or send.'),
+        SnackBar(
+          content: Text('Export completed: $exportedTo'),
           backgroundColor: Color(0xFF1A73E8),
           behavior: SnackBarBehavior.floating,
         ),
