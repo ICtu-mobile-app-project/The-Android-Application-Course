@@ -4,9 +4,10 @@ import '../models/student.dart';
 import '../theme/app_theme.dart';
 
 class StudentForm extends StatefulWidget {
-  final void Function(Student student) onAdd;
+  final Student? initialStudent;
+  final void Function(Student student) onSave;
 
-  const StudentForm({super.key, required this.onAdd});
+  const StudentForm({super.key, this.initialStudent, required this.onSave});
 
   @override
   State<StudentForm> createState() => _StudentFormState();
@@ -14,9 +15,28 @@ class StudentForm extends StatefulWidget {
 
 class _StudentFormState extends State<StudentForm> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _scoreController = TextEditingController();
+  late TextEditingController _nameController;
+  late TextEditingController _scoreController;
   bool _scoreUnknown = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.initialStudent?.name ?? '');
+    _scoreController = TextEditingController(
+        text: widget.initialStudent?.score?.toString() ?? '');
+    _scoreUnknown = widget.initialStudent != null && widget.initialStudent!.score == null;
+  }
+
+  @override
+  void didUpdateWidget(StudentForm oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialStudent != oldWidget.initialStudent) {
+      _nameController.text = widget.initialStudent?.name ?? '';
+      _scoreController.text = widget.initialStudent?.score?.toString() ?? '';
+      _scoreUnknown = widget.initialStudent != null && widget.initialStudent!.score == null;
+    }
+  }
 
   @override
   void dispose() {
@@ -32,16 +52,27 @@ class _StudentFormState extends State<StudentForm> {
     final int? score =
         _scoreUnknown ? null : int.tryParse(_scoreController.text.trim());
 
-    widget.onAdd(Student(name: name, score: score));
+    widget.onSave(Student(name: name, score: score));
 
-    _nameController.clear();
-    _scoreController.clear();
-    setState(() => _scoreUnknown = false);
+    if (widget.initialStudent == null) {
+      _nameController.clear();
+      _scoreController.clear();
+      setState(() => _scoreUnknown = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isEditing = widget.initialStudent != null;
+
     return Card(
+      elevation: isEditing ? 8 : 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: isEditing
+            ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 2)
+            : BorderSide.none,
+      ),
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Form(
@@ -50,7 +81,7 @@ class _StudentFormState extends State<StudentForm> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Add a Student',
+                isEditing ? 'Edit Student' : 'Add a Student',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -109,8 +140,11 @@ class _StudentFormState extends State<StudentForm> {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: _submit,
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add Student'),
+                  icon: Icon(isEditing ? Icons.save : Icons.add),
+                  label: Text(isEditing ? 'Update Student' : 'Add Student'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isEditing ? Colors.orange.shade700 : null,
+                  ),
                 ),
               ),
             ],

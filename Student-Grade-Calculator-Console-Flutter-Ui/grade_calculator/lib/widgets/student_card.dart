@@ -5,75 +5,97 @@ import '../utils/grade_calculator.dart';
 class StudentCard extends StatelessWidget {
   final Student student;
   final int index;
+  final bool isSelected;
+  final VoidCallback onTap;
 
-  const StudentCard({super.key, required this.student, required this.index});
+  const StudentCard({
+    super.key,
+    required this.student,
+    required this.index,
+    this.isSelected = false,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final bool hasScore = student.score != null;
-    // extensions defined in grade_calculator.dart
     final String grade = student.grade;
     final Color accentColor = student.accent;
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            CircleAvatar(
-              backgroundColor: accentColor.withOpacity(0.2),
-              child: Text(
-                '${index + 1}',
-                style: TextStyle(
-                  color: accentColor,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    student.name,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  const SizedBox(height: 4),
-                  if (hasScore)
-                    Text(
-                      'Score: ${student.score} • Grade: $grade',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    )
-                  else
-                    Text(
-                      'No score available',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontStyle: FontStyle.italic,
-                            color: Colors.grey,
-                          ),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeInOut,
+      child: Card(
+        elevation: isSelected ? 8 : 1,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: isSelected
+              ? BorderSide(color: accentColor, width: 2)
+              : BorderSide.none,
+        ),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: accentColor.withOpacity(0.2),
+                  child: Text(
+                    '${index + 1}',
+                    style: TextStyle(
+                      color: accentColor,
+                      fontWeight: FontWeight.bold,
                     ),
-                ],
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: accentColor,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                grade,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+                  ),
                 ),
-              ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        student.name,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                      const SizedBox(height: 4),
+                      if (hasScore)
+                        Text(
+                          'Score: ${student.score} • Grade: $grade',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        )
+                      else
+                        Text(
+                          'No score available',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                fontStyle: FontStyle.italic,
+                                color: Colors.grey,
+                              ),
+                        ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: accentColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    grade,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

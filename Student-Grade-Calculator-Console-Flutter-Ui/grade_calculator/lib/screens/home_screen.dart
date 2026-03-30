@@ -19,11 +19,36 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final List<Student> _students = [];
+  int? _selectedStudentIndex;
   bool _importing = false;
   bool _exporting = false;
 
-  void _addStudent(Student s) {
-    setState(() => _students.add(s));
+  void _handleSaveStudent(Student s) {
+    setState(() {
+      if (_selectedStudentIndex != null) {
+        _students[_selectedStudentIndex!] = s;
+        _selectedStudentIndex = null;
+      } else {
+        _students.add(s);
+      }
+    });
+  }
+
+  void _deleteSelectedStudent() {
+    if (_selectedStudentIndex != null && _selectedStudentIndex! < _students.length) {
+      final name = _students[_selectedStudentIndex!].name;
+      setState(() {
+        _students.removeAt(_selectedStudentIndex!);
+        _selectedStudentIndex = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Removed $name from list'),
+          backgroundColor: Colors.red.shade800,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   void _clearAll() {
@@ -32,7 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Clear all students?'),
-        content: const Text('This will remove all students from the list.'),
+        content: const Text('This will remove everyone from the list. This action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -41,9 +66,12 @@ class _HomeScreenState extends State<HomeScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
-              setState(() => _students.clear());
+              setState(() {
+                _students.clear();
+                _selectedStudentIndex = null;
+              });
             },
-            child: const Text('Clear', style: TextStyle(color: Colors.red)),
+            child: const Text('Clear All', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -54,27 +82,21 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _importExcel() async {
     setState(() => _importing = true);
     try {
-      // Higher-order: pass getGrade as the grader lambda so grading logic is
-      // injected into the file parser rather than hardcoded inside it.
       final result = await importStudentsFromExcel(grader: getGrade);
+      if (result == null) return;
 
-      if (result == null) return; // user cancelled the picker
-
-      // Ask whether to append or replace
       if (!mounted) return;
       final bool replace = await showDialog<bool>(
             context: context,
             builder: (ctx) => AlertDialog(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               title: const Text('Import students'),
               content: Text(result.summary),
               actions: [
                 if (_students.isNotEmpty)
                   TextButton(
                     onPressed: () => Navigator.pop(ctx, true),
-                    child: const Text('Replace list',
-                        style: TextStyle(color: Colors.red)),
+                    child: const Text('Replace list', style: TextStyle(color: Colors.red)),
                   ),
                 TextButton(
                   onPressed: () => Navigator.pop(ctx, false),
@@ -82,19 +104,20 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ],
             ),
-          ) ??
-          false;
+          ) ?? false;
 
       setState(() {
-        if (replace) _students.clear();
+        if (replace) {
+          _students.clear();
+          _selectedStudentIndex = null;
+        }
         _students.addAll(result.students);
       });
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-              '${result.students.length} student(s) imported successfully.'),
+          content: Text('${result.students.length} student(s) imported.'),
           backgroundColor: const Color(0xFF2E7D32),
           behavior: SnackBarBehavior.floating,
         ),
@@ -117,7 +140,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _exportExcel() async {
     setState(() => _exporting = true);
     try {
-      // Higher-order: rowBuilder lambda maps each Student to its Excel row data.
       await exportStudentsToExcel(
         students: _students,
         rowBuilder: (student) => [
@@ -125,24 +147,6 @@ class _HomeScreenState extends State<HomeScreen> {
           student.score?.toString() ?? 'N/A',
           student.grade,
         ],
-      );
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Export ready — use the share sheet to save or send.'),
-          backgroundColor: Color(0xFF1A73E8),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Export failed: $e'),
-          backgroundColor: Colors.red.shade700,
-          behavior: SnackBarBehavior.floating,
-        ),
       );
     } finally {
       if (mounted) setState(() => _exporting = false);
@@ -158,11 +162,17 @@ class _HomeScreenState extends State<HomeScreen> {
             expandedHeight: 200,
             floating: false,
             pinned: true,
+            automaticallyImplyLeading: false, // Prevents default leading widgets
+            leading: _selectedStudentIndex != null
+                ? IconButton(
+                    tooltip: 'Delete selected student',
+                    icon: const Icon(Icons.delete, color: Colors.white, size: 28),
+                    onPressed: _deleteSelectedStudent,
+                  )
+                : null,
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
-                decoration: const BoxDecoration(
-                  gradient: kAppGradient,
-                ),
+                decoration: const BoxDecoration(gradient: kAppGradient),
                 child: Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -173,16 +183,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: Colors.white,
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
-                          letterSpacing: -1,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         '${_students.length} student${_students.length == 1 ? '' : 's'} added',
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 16,
-                        ),
+                        style: const TextStyle(color: Colors.white70, fontSize: 16),
                       ),
                     ],
                   ),
@@ -197,7 +203,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               if (_students.isNotEmpty)
                 IconButton(
-                  icon: const Icon(Icons.delete_outline),
+                  tooltip: 'Clear all students',
+                  icon: const Icon(Icons.delete_forever_outlined),
                   onPressed: _clearAll,
                   color: Colors.white,
                 ),
@@ -206,7 +213,11 @@ class _HomeScreenState extends State<HomeScreen> {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: StudentForm(onAdd: _addStudent),
+              child: StudentForm(
+                key: ValueKey('form_${_selectedStudentIndex ?? -1}'),
+                initialStudent: _selectedStudentIndex != null ? _students[_selectedStudentIndex!] : null,
+                onSave: _handleSaveStudent,
+              ),
             ),
           ),
           SliverToBoxAdapter(
@@ -217,7 +228,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Expanded(
                     child: _ActionButton(
                       icon: Icons.upload_file,
-                      label: 'Import Excel',
+                      label: 'Import',
                       loading: _importing,
                       onTap: _importing ? null : _importExcel,
                     ),
@@ -226,7 +237,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Expanded(
                     child: _ActionButton(
                       icon: Icons.download,
-                      label: 'Export Excel',
+                      label: 'Export',
                       loading: _exporting,
                       onTap: (_students.isEmpty || _exporting) ? null : _exportExcel,
                     ),
@@ -245,13 +256,16 @@ class _HomeScreenState extends State<HomeScreen> {
               delegate: SliverChildBuilderDelegate(
                 (context, index) => Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
-                    child: StudentCard(
-                      key: ValueKey('${_students[index].name}_$index'),
-                      student: _students[index],
-                      index: index,
-                    ),
+                  child: StudentCard(
+                    key: ValueKey('${_students[index].name}_$index'),
+                    student: _students[index],
+                    index: index,
+                    isSelected: _selectedStudentIndex == index,
+                    onTap: () {
+                      setState(() {
+                        _selectedStudentIndex = (_selectedStudentIndex == index) ? null : index;
+                      });
+                    },
                   ),
                 ),
                 childCount: _students.length,
@@ -263,19 +277,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// ── Reusable action button ───────────────────────────────────────────
 class _ActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool loading;
   final VoidCallback? onTap;
 
-  const _ActionButton({
-    required this.icon,
-    required this.label,
-    required this.loading,
-    required this.onTap,
-  });
+  const _ActionButton({required this.icon, required this.label, required this.loading, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -285,25 +293,19 @@ class _ActionButton extends StatelessWidget {
       child: ElevatedButton.icon(
         onPressed: onTap,
         icon: loading
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
+            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
             : Icon(icon),
         label: Text(label),
         style: ElevatedButton.styleFrom(
           backgroundColor: enabled ? Theme.of(context).colorScheme.primary : Colors.grey,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         ),
       ),
     );
   }
 }
 
-// ── Empty state ───────────────────────────────────────────────────
 class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -311,30 +313,11 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.school_outlined,
-            size: 80,
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
-          ),
+          Icon(Icons.school_outlined, size: 80, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3)),
           const SizedBox(height: 16),
-          Text(
-            'No students yet',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Add a student manually or import an Excel file',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                ),
-            textAlign: TextAlign.center,
-          ),
+          Text('No students yet', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
         ],
       ),
     );
   }
 }
-
-
