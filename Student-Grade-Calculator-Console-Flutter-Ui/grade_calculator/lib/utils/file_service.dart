@@ -1,13 +1,11 @@
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:excel/excel.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../models/student.dart';
 import 'grade_calculator.dart';
+import 'xlsx_delivery.dart';
 
 // ── Result type returned by the import function ──────────────────────────────
 
@@ -251,27 +249,22 @@ Future<String> exportStudentsToExcel({
   sheet.setColumnWidth(2, 10);
   sheet.setColumnWidth(3, 10);
 
-  // ── Save file ─────────────────────────────────────────────────────────────
-  final Uint8List fileBytes = Uint8List.fromList(excel.encode()!);
+  // Save file
+  // Save file bytes through platform-specific delivery (download on web,
+  // local file + share sheet on Android/iOS/desktop).
+  final encoded = excel.encode();
+  if (encoded == null) {
+    throw StateError('Unable to generate Excel bytes for export.');
+  }
+  final Uint8List fileBytes = Uint8List.fromList(encoded);
 
-  final dir = await getApplicationDocumentsDirectory();
   final timestamp = DateTime.now()
       .toIso8601String()
       .replaceAll(RegExp(r'[:.T]'), '-')
       .substring(0, 19);
-  final filePath = '${dir.path}/grades_$timestamp.xlsx';
+  final fileName = 'grades_$timestamp.xlsx';
 
-  final file = File(filePath);
-  await file.writeAsBytes(fileBytes);
-
-  // ── Share sheet (share_plus v10 API) ─────────────────────────────────────
-  await Share.shareXFiles(
-    [XFile(filePath)],
-    subject: 'Student Grades Export',
-    text: 'Student grades exported from Grade Calculator',
-  );
-
-  return filePath;
+  return saveOrShareXlsx(bytes: fileBytes, fileName: fileName);
 }
 
 /// Maps a grade letter to a hex colour for Excel cell styling.
@@ -285,4 +278,3 @@ String _gradeHex(String grade) {
   };
   return map[grade] ?? '#9E9E9E';
 }
-
